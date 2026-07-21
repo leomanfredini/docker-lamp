@@ -82,7 +82,8 @@ Adicione os arquivos da sua aplicação PHP dentro da pasta `src/`. Esse diretó
 ### 4. Subir a stack
 
 ```bash
-docker compose up -d --build
+docker compose build
+docker compose up -d
 ```
 
 Esse comando constrói a imagem do serviço `app` e inicia os três containers em segundo plano.
