@@ -1,0 +1,83 @@
+services:
+  app:
+    container_name: docker-lamp
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-80}:80"
+    volumes:
+      - ./src:/var/www/html/src
+      - ./config/php.ini:/etc/php/8.3/apache2/php.ini
+      - ./config/000-default.conf:/etc/apache2/sites-available/000-default.conf
+      - ./logs/apache2:/var/log/apache2
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    networks:
+      - app-network
+
+  mariadb:
+    image: mariadb:11.4
+    container_name: mariadb-lamp
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-lamp}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    restart: unless-stopped
+    ports:
+      # Exponha para o host apenas se precisar acessar o MySQL fora do Docker
+      # (ex.: com um cliente local). Caso contrário, remova este mapeamento —
+      # app e phpmyadmin já falam com o mariadb pela app-network.
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - ./config/my.cnf:/etc/mysql/conf.d/my.cnf
+      - db-data:/var/lib/mysql
+      - ./logs/mysql:/var/log/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+    networks:
+      - app-network
+
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    container_name: phpmyadmin-lamp
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      PMA_HOST: mariadb
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 2000M
+    restart: unless-stopped
+    ports:
+      - "${PMA_PORT:-8080}:80"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db-data:
