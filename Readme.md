@@ -20,7 +20,8 @@ O container `app` já vem com Composer instalado, `mod_rewrite` e `mod_headers` 
 docker-lamp/
 ├── config/
 │   ├── php.ini             # Configuração customizada do PHP
-│   └── 000-default.conf    # VirtualHost do Apache
+│   ├── 000-default.conf    # VirtualHost do Apache
+│   └── my.cnf              # Configuração customizada do MariaDB
 ├── logs/
 │   ├── apache2/            # Logs de acesso e erro do Apache
 │   └── mysql/              # Logs do MariaDB
